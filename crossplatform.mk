@@ -50,7 +50,9 @@ else
 endif
 
 # PREFIXES AND EXTENSIONS
-.SUFFIXES: .c .ec .sym .imp .o .a
+.SUFFIXES: .ec .pec .sym .imp .c .o .a
+P := .pec
+EC := .ec
 S := .sym
 I := .imp
 C := .c
@@ -87,19 +89,6 @@ ifdef DISTCC
    DISTCC_COMPILE := distcc
 endif
 endif
-
-# TOOLCHAIN
-export CC      = $(CCACHE_COMPILE) $(DISTCC_COMPILE) gcc
-export CPP     = $(CCACHE_COMPILE) $(DISTCC_COMPILE) cpp
-export ECP     = ecp
-export ECC     = ecc
-export ECS     = ecs
-export EAR     = ear
-export AS      = as
-export LD      = ld
-export AR      = ar
-export STRIP   = strip
-UPX := upx
 
 # SHELL COMMANDS
 ifdef WINDOWS
