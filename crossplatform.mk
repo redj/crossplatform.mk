@@ -2,6 +2,30 @@
 ifeq ($(OS),Windows_NT)
    HOST_PLATFORM := win32
    WINDOWS_HOST := defined
+   # IA64 / AMD64 / x86   #HKEY_LOCAL_MACHINE
+   #_PROCESSOR_ARCHITECTURE := $(shell reg Query "HKLM\System\CurrentControlSet\Control\Session Manager\Environment" /v PROCESSOR_ARCHITECTURE)
+   #ifneq ($(findstring AMD64,$(_PROCESSOR_ARCHITECTURE)),)
+   #   HOST_ARCH := amd64
+   #   HOST_BITS := 64
+   #else
+   #   ifneq ($(findstring IA64,$(_PROCESSOR_ARCHITECTURE)),)
+   #      HOST_ARCH := ia64
+   #      HOST_BITS := 64
+   #   else
+   #      ifneq ($(findstring x86,$(_PROCESSOR_ARCHITECTURE)),)
+   #         HOST_ARCH := x86
+   #         HOST_BITS := 32
+   #      else
+   #         HOST_ARCH := unknown
+   #         HOST_BITS := unknown
+   #      endif
+   #   endif
+   #endif
+   #ifdef ProgramFiles(x86)
+   #   HOST_BITS := 64
+   #else
+   #   HOST_BITS := 32
+   #endif
 else
  _UNAME := $(shell uname)
  UNAME_P := $(shell uname -p)
@@ -140,6 +164,7 @@ endif
 ifndef ARCH
  ifeq ($(HOST_PLATFORM),win32)
   ifeq ($(TARGET_PLATFORM),win32)
+   #ifeq ($(HOST_BITS),32)
    ifndef ProgramFiles(x86)
     ARCH := x32
     TARGET_ARCH := i386
