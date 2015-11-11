@@ -195,6 +195,14 @@ list_src_to_obj = $(addprefix $(OBJ),$(patsubst %$(1),%$(2),$(notdir $(3))))
 list_match_src_dir_objs = $(patsubst %.c,%$(O),$(foreach path,$(2),$(if $(filter-out $(srcdir)$(1),$(dir $(path))),,$(OBJ)$(notdir $(path)))))
 
 
+# MATH TOOLS
+ifdef WIN_SHELL_COMMANDS
+   # todo: see if we can't use a common function for escaping
+   escape_chars_for_cmd = $(subst %,^%,$(subst <,^<,$(subst >,^>,$(subst &,^&,$(subst |,^|,$(subst ^,^^,$(1)))))))
+   math = $(shell CMD /C "SET /A $(call escape_chars_for_cmd,$(1)"))
+else
+   math = $(shell $(1))
+endif
 
 # FILE PATH TOOLS
 fp_encode = $(call hidspace,$(call fp_unquote,$(1)))
@@ -235,6 +243,8 @@ pl_unwildcard_some = $(if $(1),$(if $(subst $(space),,$(call pl_unwildcard,$(1))
 hs_ls = $(subst $(temporaty_token),$(space),$(subst ./,,$(call hs_hide,$(subst $(space)./,$(temporaty_token),$(wildcard ./*/)))))
 hs_ls_dir = $(subst /,,$(foreach item,$(hs_ls),$(if $(findstring /,$(item)),$(item),)))
 hs_ls_file = $(foreach item,$(hs_ls),$(if $(findstring /,$(item)),,$(item)))
+# find_parent_dir_with_file usage: $(call find_parent_dir_with_file,<file-name>,<start-dir>,<max-depth>)
+find_parent_dir_with_file = $(if $(wildcard $(2)$(1)),$(2),$(if $(3),$(if $(subst 0,,$(3)),$(call find_parent_dir_with_file,$(1),$(2)../,$(call math,$(3)-1)),),))
 
 # CONTROL FLOW TOOLS
 # hs_crossloop usage: $(call hs_crossloop,<list>,<command_function>)
