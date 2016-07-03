@@ -204,6 +204,7 @@ else
    math = $(shell $(1))
 endif
 
+ifdef _______HEAD
 # FILE PATH TOOLS
 fp_encode = $(call hidspace,$(call fp_unquote,$(1)))
 #fp_encode = $(subst $(space),$(esc),$(subst $(backslash)$(space),$(esc),$(1))) old encode? same code?
@@ -266,50 +267,228 @@ ifdef WIN_PS_TOOLS
    quote_path = "$(call sys_path,$(call unescp_all,$(1)))"
    each_path_quote = $(if $(findstring $(esc),$(_path)),"$(call unescp_all,$(call shwspace,$(_path)))",$(call unescp_all,$(_path)))
    sys_path_list = $(foreach _path,$(1),$(each_path_quote))
+endif
+# find_parent_dir_with_file usage: $(call find_parent_dir_with_file,<file-name>,<start-dir>,<max-depth>)
+find_parent_dir_with_file = $(if $(wildcard $(2)$(1)),$(2),$(if $(3),$(if $(subst 0,,$(3)),$(call find_parent_dir_with_file,$(1),$(2)../,$(call math,$(3)-1)),),))
+
+# TOOLS DOC
+#
+#     Function Name                    Description
+#
+#
+#     va_*                             Basic Variables (No Parameters)
+#
+#     va_empty                            Empty Variable
+#
+#     va_numbers                          List of Numbers from 0 to 9
+#
+#
+#     ch_*                             Characters (Single or Multiple, No Parameters)
+#
+#                                         Slash Chars
+#
+#     ch_slash                               Forward Slash
+#     ch_backslash                           Backward Slash
+#
+#                                         Space Chars
+#
+#     ch_lit_space                           Literal Space
+#     ch_enc_space                           Encoded Space
+#     ch_esc_space                           Escaped Space
+#
+#                                         Special Chars
+#
+#     ch_enc_token                           Single Char Swap Token
+#
+#     ch_tmp_token                           Temporary Token
+#                                               note: a non clashing temporary token used to
+#                                                     do string manipulations
+#
+#     st_*                             String Functions
+#
+#     st_space_esc_enc(string)            Substitute Escaped Space By Encoded Space
+#     st_space_lit_enc(string)            Substitute Literal Space By Encoded Space
+#     st_space_enc_lit(string)            Substitute Encoded Space By Literal Space
+#     st_space_enc_esc(string)            Substitute Encoded Space By Escaped Space
+#     st_slash_bac_frw(string)            Substitute Backward Slash By Forward Slash
+#     st_unquote(string)                  Remove Double Quotes Around String
+#                                            i.e.: "my str" -> my str
+#                                            i.e.: "my "special" str" -> my "special" str
+#     st_quote(string[, force])           Add Double Quotes Around String
+#                                            i.e.:  ->
+#                                            i.e.: "" ->
+#                                            i.e.: my -> my
+#                                            i.e.: my str -> "my str"
+#                                            i.e.: "my" -> my
+#                                            i.e.: "my str" -> "my str"
+#                                          when forcing...
+#                                            i.e.:  -> ""
+#                                            i.e.: "" -> ""
+#                                            i.e.: my -> "my"
+#                                            i.e.: my str -> "my str"
+#                                            i.e.: "my" -> "my"
+#                                            i.e.: "my str" -> "my str"
+#
+#     st_unescp_all                       todo... remove all \ chars that are used to escape special chars, etc?
+#
+#     st_spc_numbers(string)
+#     st_has_numbers(string)
+#     st_is_number(string)
+#
+#
+#     li_*                             List Functions
+#
+#     li_reverse(list)                 Reverse List
+#
+#     li_split_path(path)              split path into it's parts, return as a list
+#
+#     fp_*                             File System Path Functions
+#
+#     fp_enc                              Encode File System Path
+#                                            function: take a single path potentialy provided by the user and encode it in strict internal format usable in lists
+#                                                      it should have no problem taking a string that is already encoded
+#                                            i.e.: C:\path to\some dir or file -> C:/path~to/some~dir~or~file
+#                                            i.e.: C:/my/ path/ -> C:/my~path/
+#                                            i.e.: "C:/path/" -> C:/path/
+#                                            i.e.: C:/my~path/ -> C:/my~path/
+#                                            note: ~ represents ch_enc_space
+#                                            tofix: need to unescape all other possible escaped chars before calling st_slash_bac_frw
+#
+#
+#     fp_dec_xxxxxxxx                     Decode File System Path For Xxxxxxxx Use
+#
+#     fp_dec_esc(enc-path)                Decode File System Path For Escaped Space Use
+#
+#     fp_sys                              make a sys path from an encoded path
+#
+#     fp_quote                            get a quoted path from a path (which might be encoded) provided by make
+#
+#
+#     pl_*                             File System Path List Functions
+#
+#     pl_ls                               Get Path List of Entries in Current Directory
+#                                            result: a list of files and directories in the current dir
+#                                               i.e.: fileA dir1/ fileB fileC dir2/ dir3/
+#     pl_ls_dir                           Get Path List of Directories in Current Directory
+#                                            result: a list of directories in the current dir
+#                                               i.e.: dir1 dir2 dir3
+#     pl_ls_files                         Get Path List of Files in Current Directory
+#                                            result: a list of files in the current dir
+#                                               i.e.: fileA fileB fileC
+#                                            usage: $(pl_ls) | $(pl_ls_dir) | $(pl_ls_files)
+#                                            notes:
+#                                             - pl_ls* functions return a list of paths (with encoded spaces)
+#                                             - pl_ls* functions work in current dir, you can't specify a directory
+#                                             - pl_ls* functions do not report hidden files and directories because wildcard doesn't
+#                                               you would never get such a list: .fileA .dir1/
+#
+#     pl_no_parent(path-list)             Remove Any Parent Path from Path List
+#
+#     pl_dec_quote(path-list[, force])    Add Double Quotes Around Each Path from Path List and Decode Escaped Space to Literal
+#
+#     pl_call_on_each(path-list, func)    Call Arbitrary Function on Each Path from Path List
+#                                            usage: $(call pl_call_on_each,<list>,<command_function>)
+#                                            desc: pl_call_on_each will call <command_function> with the item as first parameter ($(1))
+#
+#
+#
+#     pl_wildcard(path-list)              Call Wildcard on Each Path from Path List
+#
+#     pl_sys_quote(path-list)             convert to a list of quoted sys paths
+#
+#
+#     ex_*                             Extra Miscellaneous Functions
+#
+#
+#     note: all these variables and functions are usable from makefiles that include crossplatform.mk
+#
+#
+
+
+va_empty :=
+va_numbers := 0 1 2 3 4 5 6 7 8 9
+
+
+ch_slash := $(va_empty)/$(va_empty)
+ch_backslash := $(va_empty)\$(va_empty)
+ch_lit_space := $(va_empty) $(va_empty)
+ch_enc_space := $(va_empty)$(va_empty)
+ch_esc_space := $(ch_backslash)$(ch_lit_space)
+ch_enc_token := $(ch_enc_space)
+ch_tmp_token := _+;:;+_:;+;:_:+;+:_
+
+
+# backward compatibility
+quote_path = $(call fp_quote,$(1))
+# these are a bit old, keep their names or rename them? (st_*)
+escspace = $(subst $(ch_lit_space),$(ch_backslash)$(ch_lit_space),$(subst $(ch_backslash)$(ch_lit_space),$(ch_lit_space),$(1)))
+hidspace = $(subst $(ch_lit_space),$(ch_enc_space),$(subst $(ch_backslash)$(ch_lit_space),$(ch_enc_space),$(1)))
+shwspace = $(subst $(ch_enc_space),$(ch_backslash)$(ch_lit_space),$(1))
+
+
+st_space_esc_enc = $(subst $(ch_esc_space),$(ch_enc_space),$(1))
+st_space_esc_lit = $(subst $(ch_esc_space),$(ch_lit_space),$(1))
+st_space_lit_enc = $(subst $(ch_lit_space),$(ch_enc_space),$(1))
+st_space_enc_lit = $(subst $(ch_enc_space),$(ch_lit_space),$(1))
+st_space_enc_esc = $(subst $(ch_enc_space),$(ch_esc_space),$(1))
+st_slash_bac_frw = $(subst $(ch_backslash),$(ch_slash),$(1))
+st_unquote = $(subst $(ch_tmp_token),,$(call _st_unquote_head,$(call _st_unquote_tail,$(1))))
+   _st_unquote_head = $(subst $(ch_tmp_token)",,$(ch_tmp_token)$(1))
+   _st_unquote_tail = $(subst "$(ch_tmp_token),,$(1)$(ch_tmp_token))
+st_quote = $(if $(if $(2),$(2),$(findstring $(ch_lit_space),$(1))),$(subst $(ch_tmp_token),,$(call _st_quote_head,$(call _st_quote_tail,$(1)))),$(call st_unquote,$(1)))
+   _st_quote_head = $(subst $(ch_tmp_token)"",",$(ch_tmp_token)"$(1))
+   _st_quote_tail = $(subst ""$(ch_tmp_token),",$(1)"$(ch_tmp_token))
+st_unescp_all = $(subst $(ch_enc_token),$(ch_backslash),$(subst $(ch_backslash),,$(subst $(ch_backslash)$(ch_backslash),$(ch_enc_token),$(1))))
+st_spc_numbers = $(subst 0,$(ch_lit_space)0$(ch_lit_space),$(subst 1,$(ch_lit_space)1$(ch_lit_space),$(subst 2,$(ch_lit_space)2$(ch_lit_space),$(subst 3,$(ch_lit_space)3$(ch_lit_space),$(subst 4,$(ch_lit_space)4$(ch_lit_space),$(subst 5,$(ch_lit_space)5$(ch_lit_space),$(subst 6,$(ch_lit_space)6$(ch_lit_space),$(subst 7,$(ch_lit_space)7$(ch_lit_space),$(subst 8,$(ch_lit_space)8$(ch_lit_space),$(subst 9,$(ch_lit_space)9$(ch_lit_space),$(1)))))))))))
+st_has_numbers = $(if $(filter $(va_numbers),$(call st_spc_numbers,$(1))),$(1),)
+st_is_number = $(if $(filter-out $(va_numbers),$(call st_spc_numbers,$(1))),,$(1))
+
+
+li_reverse = $(if $(1),$(call li_reverse,$(strip $(wordlist 2,$(words $(1)),$(1))))) $(firstword $(1))
+li_split_path = $(strip $(subst $(ch_slash),$(ch_lit_space),$(subst $(ch_backslash),$(ch_lit_space),$(1))))
+
+# for fp_enc -- first decode literal in case of already encoded and then encode...
+# check if this (fp_encode) is useful from a new note commit (3d417858d823376a7679978a22d52cd2a4adfd5a) on top of the old crossplatform.mk
+# also see 'path' function above which makes use of fp_encode for a simple alias to wrote more readable $(call path,MY/PATH/) instead of fp_encode
+# fp_encode = $(subst $(space),$(esc),$(subst $(backslash)$(space),$(esc),$(1)))
+fp_enc = $(call st_slash_bac_frw,$(call st_space_lit_enc,$(call st_space_esc_lit,$(1))))
+fp_dec_esc = $(call st_space_enc_esc,$(1))
+#fp_dec_sys = $(call fp_quote,$(call st_unescp_all,$(1)))
+fp_dec_sys = $(call st_quote,$(call fp_sys,$(call st_space_enc_lit,$(1))))
+fp_wildcard = $(wildcard $(call fp_sys,$(call fp_dec_esc,$(1))))
+
+fp_san_esc = $(call fp_dec_esc,$(call fp_enc,$(1)))
+fp_san_sys = $(call fp_dec_esc,$(call fp_enc,$(1)))
+
+# todo: see that each_path_wildcard = $(addprefix ./,$(wildcard $(path))) change for linux isn't lost
+ifdef WIN_SHELL_COMMANDS
+   fp_sys = $(subst $(ch_backslash)$(ch_backslash),$(ch_slash),$(subst $(ch_slash),$(ch_backslash),$(1)))
+   fp_quote = "$(call fp_sys,$(call st_unescp_all,$(1)))"
 else
-   psep := $(slash)
-   sys_path = $(1)
-   quote_path = $(1)
+   fp_sys = $(1)
+   fp_quote = $(1)
 endif
 
-# PREFIXES AND EXTENSIONS
-EC := .ec
-S := .sym
-I := .imp
-B := .bowl
-C := .c
-ifndef O
-O := .o
-endif
-A := .a
-E := $(if $(WINDOWS_TARGET),.exe,)
-SO := $(if $(WINDOWS_TARGET),.dll,$(if $(OSX_TARGET),.dylib,.so))
-LP := $(if $(WINDOWS_TARGET),$(if $(STATIC_LIBRARY_TARGET),lib,),lib)
-HOST_E := $(if $(WINDOWS_HOST),.exe,)
-HOST_SO := $(if $(WINDOWS_HOST),.dll,$(if $(OSX_HOST),.dylib,.so))
-HOST_LP := $(if $(WINDOWS_HOST),$(if $(STATIC_LIBRARY_TARGET),lib,),lib)
-.SUFFIXES: .c .ec .sym .imp .bowl $(O) $(A)
 
-# TARGET VERSION
-VER := $(if $(LINUX_TARGET),$(if $(LINUX_HOST),$(if $(VERSION),.$(VERSION),),),)
+pl_ls = $(subst $(ch_tmp_token),$(ch_lit_space),$(subst ./,,$(call st_space_lit_enc,$(subst $(ch_lit_space)./,$(ch_tmp_token),$(wildcard ./*/)))))
+pl_ls_dir = $(subst /,,$(foreach item,$(pl_ls),$(if $(findstring /,$(item)),$(item),)))
+pl_ls_file = $(foreach item,$(pl_ls),$(if $(findstring /,$(item)),,$(item)))
 
-# SUPER TOOLS
-ifdef CCACHE
-   CCACHE_COMPILE := ccache$(space)
-ifdef DISTCC
-   DISTCC_COMPILE := distcc$(space)
-endif
+pl_no_parent = $(foreach item,$(1),$(if $(findstring ..,$(item)),,$(item)))
+pl_dec_quote = $(foreach item,$(1),$(if $(if $(2),$(2),$(findstring $(ch_enc_space),$(item))),"$(call st_space_enc_lit,$(item))",$(item)))
+
+pl_call_on_each = $(call _pl_call_on_each_raw,$(call pl_no_parent,$(1)),$(2))
+
+ifdef WIN_SHELL_COMMANDS
+      _pl_call_on_each_raw = ${if $(1),${if $(2),@cmd /c "for %%I in (${call pl_dec_quote,$(1)}) do ${call $(2),%%I}",},}
+   pl_wildcard = $(foreach item,$(1),$(wildcard $(call fp_dec_esc,$(item))))
+   pl_sys_quote = $(foreach path,$(1),$(_pl_sys_quote_each))
+      _pl_sys_quote_each = $(if $(findstring $(ch_enc_space),$(path)),"$(call st_unescp_all,$(call fp_dec_esc,$(path)))",$(call st_unescp_all,$(path)))
 else
-ifdef DISTCC
-   DISTCC_COMPILE := distcc$(space)
+      _pl_call_on_each_raw = ${if $(1),${if $(2),for item in ${call pl_dec_quote,$(1)}; do ${call $(2),"$$item"}; done,},}
+   pl_wildcard = $(foreach item,$(1),$(wildcard $(item)))
+   pl_sys_quote = $(1)
 endif
-endif
-
-_CPP = $(if $(findstring $(space),$(CPP)),"$(CPP)",$(CPP))
-
-_SYSROOT = $(if $(SYSROOT),$(space)--sysroot=$(SYSROOT),)
-
-_MAKE = $(call fp_opt_quotes,$(MAKE))
 
 # cdmake = $(if $(if $(filter-out clean,$(filter-out cleantarget,$(filter-out realclean,$(2)))),$(if $(wildcard $(1)),do,),do),cd $(1) && $(_MAKE)$(if $(srcdir), srcdir=..\$(srcdir)$(1)\ -f ..\$(srcdir)$(1)\Makefile,)$(if $(2), $(2),),)
 cdmake = $(if $(if $(find clean,$(2)),$(if $(wildcard $(1)),do,),do),cd $(1) && $(_MAKE)$(if $(srcdir), srcdir=../$(srcdir)$(1)/ -f ..\\$(srcdir)$(1)\\Makefile,)$(if $(2), $(2),),)
@@ -337,14 +516,20 @@ ifdef WIN_SHELL_COMMANDS
    cd = @cd
    nullerror = 2>NUL
    echo = $(if $(1),echo $(1))
-   touch = $(if $(1),@cmd /c "for %%I in ($(call sys_path,$(1))) do @(cd %%~pI && type nul >> %%~nxI && copy /by %%~nxI+,, > nul 2>&1 && cd %%cd%%)")
-   cp = $(if $(1),@cmd /c "for %%I in ($(call sys_path,$(1))) do copy /by %%I $(call sys_path,$(2))"$(if $(SILENT_IS_ON), > nul,))
-   cpr = $(if $(1),xcopy /y /i /e$(if $(SILENT_IS_ON), /q,) $(call sys_path,$(call sys_path_list,$(1))) $(call sys_path,$(2))$(if $(SILENT_IS_ON), > nul,))
-   rm = $(if $(call pl_wildcard_some,$(1)),-del /f$(if $(SILENT_IS_ON), /q,) $(call sys_path,$(call sys_path_list,$(call pl_wildcard,$(1))))$(if $(SILENT_IS_ON), > nul,),)
-   rmr = $(if $(call pl_wildcard_some,$(1)),-rmdir /s /q $(call sys_path,$(call pl_wildcard,$(1)))$(if $(SILENT_IS_ON), > nul,),)
+   touch = $(if $(1),@cmd /c "for %%I in ($(call fp_sys,$(1))) do @(cd %%~pI && type nul >> %%~nxI && copy /by %%~nxI+,, > nul 2>&1 && cd %%cd%%)")
+   cp = $(if $(1),@cmd /c "for %%I in ($(call fp_sys,$(1))) do copy /by %%I $(call fp_dec_sys,$(2))"$(if $(SILENT_IS_ON), > nul,))
+   cpr = $(if $(1),xcopy /y /i /e$(if $(SILENT_IS_ON), /q,) $(call fp_sys,$(call pl_sys_quote,$(1))) $(call fp_dec_sys,$(2))$(if $(SILENT_IS_ON), > nul,))
+ifdef _______HEAD
+   rm = $(if $(call pl_wildcard_some,$(1)),-del /f$(if $(SILENT_IS_ON), /q,) $(call fp_sys,$(call pl_sys_quote,$(call pl_wildcard,$(1))))$(if $(SILENT_IS_ON), > nul,),)
+   rmr = $(if $(call pl_wildcard_some,$(1)),-rmdir /s /q $(call fp_sys,$(call pl_wildcard,$(1)))$(if $(SILENT_IS_ON), > nul,),)
    mkdir = $(if $(call pl_unwildcard_some,$(1)),-mkdir $(call pl_decode,$(call pl_unwildcard,$(1)))$(if $(SILENT_IS_ON), > nul,),)
    rmdir = $(if $(call pl_wildcard_some,$(1)),-rmdir /q $(call pl_decode,$(call pl_wildcard,$(1)))$(if $(SILENT_IS_ON), > nul,),)
    hs_unsafe_crossloop = ${if $(1),${if $(2),@cmd /c "for %%I in (${call hs_quote_each,$(1)}) do ${call $(2),%%I}",},}
+endif
+   rm = $(if $(call wildcard_check,$(1)),-del /f$(if $(SILENT_IS_ON), /q,) $(call fp_sys,$(call pl_sys_quote,$(call wildcard_list,$(1))))$(if $(SILENT_IS_ON), > nul,),)
+   rmr = $(if $(call wildcard_check,$(1)),-rmdir /s /q $(call fp_sys,$(call wildcard_list,$(1)))$(if $(SILENT_IS_ON), > nul,),)
+   mkdir = $(if $(call unwildcard_check,$(1)),-mkdir $(call fp_sys,$(call unwildcard_list,$(1)))$(if $(SILENT_IS_ON), > nul,),)
+   rmdir = $(if $(call wildcard_check,$(1)),-rmdir /q $(call fp_sys,$(call wildcard_list,$(1)))$(if $(SILENT_IS_ON), > nul,),)
 else
    cd = cd
    nullerror = 2>/dev/null
@@ -352,37 +537,32 @@ else
    touch = $(if $(1),touch $(1))
    cp = $(if $(1),cp -P$(if $(SILENT_IS_ON),,v) $(1) $(2))
    cpr = $(if $(1),cp -PR$(if $(SILENT_IS_ON),,v) $(1) $(2))
+ifdef _______HEAD
    rm = $(if $(call pl_wildcard_some,$(1)),-rm -f$(if $(SILENT_IS_ON),,v) $(call pl_wildcard,$(1)),)
    rmr = $(if $(call pl_wildcard_some,$(1)),-rm -fr$(if $(SILENT_IS_ON),,v) $(call pl_wildcard,$(1)),)
    mkdir = $(if $(call pl_unwildcard_some,$(1)),-mkdir -p$(if $(SILENT_IS_ON),,v) $(call pl_unwildcard,$(1)),)
    rmdir = $(if $(call pl_wildcard_some,$(1)),-rmdir$(if $(SILENT_IS_ON),, -v) $(call pl_wildcard,$(1)),)
    hs_unsafe_crossloop = ${if $(1),${if $(2),for item in ${call hs_quote_each,$(1)}; do ${call $(2),"$$item"}; done,},}
 endif
+   rm = $(if $(call wildcard_check,$(1)),-rm -f$(if $(SILENT_IS_ON),,v) $(call wildcard_list,$(1)),)
+   rmr = $(if $(call wildcard_check,$(1)),-rm -fr$(if $(SILENT_IS_ON),,v) $(call wildcard_list,$(1)),)
+   mkdir = $(if $(call unwildcard_check,$(1)),-mkdir -p$(if $(SILENT_IS_ON),,v) $(call unwildcard_list,$(1)),)
+   rmdir = $(if $(call wildcard_check,$(1)),-rmdir$(if $(SILENT_IS_ON),, -v) $(call wildcard_list,$(1)),)
+endif
 
-# potential common use variables
-numbers := 0 1 2 3 4 5 6 7 8 9
-
-# potential common use functions
-reverselist = $(if $(1),$(call reverselist,$(strip $(wordlist 2,$(words $(1)),$(1))))) $(firstword $(1))
-dirlistfromlocation = $(strip $(subst $(slash),$(space),$(subst $(backslash),$(space),$(1))))
-spacenumbers = $(subst 0,$(space)0$(space),$(subst 1,$(space)1$(space),$(subst 2,$(space)2$(space),$(subst 3,$(space)3$(space),$(subst 4,$(space)4$(space),$(subst 5,$(space)5$(space),$(subst 6,$(space)6$(space),$(subst 7,$(space)7$(space),$(subst 8,$(space)8$(space),$(subst 9,$(space)9$(space),$(1)))))))))))
-hasnumbers = $(if $(filter $(numbers),$(call spacenumbers,$(1))),$(1),)
-isanumber = $(if $(filter-out $(numbers),$(call spacenumbers,$(1))),,$(1))
-
-# location version utility functions (lv_*)
-lv_issimplever = $(if $(call isanumber,$(firstword $(call spacenumbers,$(subst .,,$(1))))),$(1),)
-lv_isversionver = $(if $(call lv_issimplever,$(1:v%=%)),$(1),$(if $(call lv_issimplever,$(1:ver%=%)),$(1),$(if $(call lv_issimplever,$(1:version%=%)),$(1),)))
-lv_isreleasever = $(if $(call lv_issimplever,$(1:r%=%)),$(1),$(if $(call lv_issimplever,$(1:rel%=%)),$(1),$(if $(call lv_issimplever,$(1:release%=%)),$(1),)))
-lv_isbuildver = $(if $(call lv_issimplever,$(1:b%=%)),$(1),$(if $(call lv_issimplever,$(1:bld%=%)),$(1),$(if $(call lv_issimplever,$(1:build%=%)),$(1),)))
-lv_iscomplexver = $(if $(call lv_isversionver,$(1)),$(1),$(if $(call lv_isreleasever,$(1)),$(1),$(if $(call lv_isbuildver,$(1)),$(1),)))
-lv_isver = $(if $(call lv_issimplever,$(1)),$(1),$(if $(call lv_iscomplexver,$(1)),$(1),))
-lv_possibleverorver = $(if $(findstring -,$(1)),$(if $(call hasnumbers,$(1)),$(1),),$(if $(call lv_isver,$(1)),$(1),))
-lv_termslistfromdir = $(strip $(subst -,$(space),$(1)))
-lv_verfromtermlist = $(if $(1)$(2),$(if $(1),$(1)$(if $(2),-,),)$(call lv_verfromtermlist,$(firstword $(2)),$(wordlist 2,$(words $(2)),$(2))),)
-lv_termwalker = $(if $(firstword $(1)),$(if $(call lv_isver,$(firstword $(1))),$(call lv_verfromtermlist,,$(1)),$(call lv_termwalker,$(wordlist 2,$(words $(1)),$(1)))),)
-lv_version = $(if $(call lv_possibleverorver,$(1)),$(call lv_termwalker,$(call lv_termslistfromdir,$(1))),)
-lv_dirwalker = $(if $(firstword $(1)),$(if $(call lv_version,$(firstword $(1))),$(call lv_version,$(firstword $(1))),$(call lv_dirwalker,$(wordlist 2,$(words $(1)),$(1)))),)
-locationversion = $(call shwspace,$(call lv_dirwalker,$(call reverselist,$(subst $(space)$(space),$(space),$(call dirlistfromlocation,$(call hidspace,$(1)))))))
+locationversion = $(call fp_dev_esc,$(call _lv_dirwalker,$(call li_reverse,$(subst $(ch_lit_space)$(ch_lit_space),$(ch_lit_space),$(call li_split_path,$(call fp_enc,$(1)))))))
+   _lv_issimplever = $(if $(call st_is_number,$(firstword $(call st_spc_numbers,$(subst .,,$(1))))),$(1),)
+   _lv_isversionver = $(if $(call _lv_issimplever,$(1:v%=%)),$(1),$(if $(call _lv_issimplever,$(1:ver%=%)),$(1),$(if $(call _lv_issimplever,$(1:version%=%)),$(1),)))
+   _lv_isreleasever = $(if $(call _lv_issimplever,$(1:r%=%)),$(1),$(if $(call _lv_issimplever,$(1:rel%=%)),$(1),$(if $(call _lv_issimplever,$(1:release%=%)),$(1),)))
+   _lv_isbuildver = $(if $(call _lv_issimplever,$(1:b%=%)),$(1),$(if $(call _lv_issimplever,$(1:bld%=%)),$(1),$(if $(call _lv_issimplever,$(1:build%=%)),$(1),)))
+   _lv_iscomplexver = $(if $(call _lv_isversionver,$(1)),$(1),$(if $(call _lv_isreleasever,$(1)),$(1),$(if $(call _lv_isbuildver,$(1)),$(1),)))
+   _lv_isver = $(if $(call _lv_issimplever,$(1)),$(1),$(if $(call _lv_iscomplexver,$(1)),$(1),))
+   _lv_possibleverorver = $(if $(findstring -,$(1)),$(if $(call st_has_numbers,$(1)),$(1),),$(if $(call _lv_isver,$(1)),$(1),))
+   _lv_termslistfromdir = $(strip $(subst -,$(ch_lit_space),$(1)))
+   _lv_verfromtermlist = $(if $(1)$(2),$(if $(1),$(1)$(if $(2),-,),)$(call _lv_verfromtermlist,$(firstword $(2)),$(wordlist 2,$(words $(2)),$(2))),)
+   _lv_termwalker = $(if $(firstword $(1)),$(if $(call _lv_isver,$(firstword $(1))),$(call _lv_verfromtermlist,,$(1)),$(call _lv_termwalker,$(wordlist 2,$(words $(1)),$(1)))),)
+   _lv_version = $(if $(call _lv_possibleverorver,$(1)),$(call _lv_termwalker,$(call _lv_termslistfromdir,$(1))),)
+   _lv_dirwalker = $(if $(firstword $(1)),$(if $(call _lv_version,$(firstword $(1))),$(call _lv_version,$(firstword $(1))),$(call _lv_dirwalker,$(wordlist 2,$(words $(1)),$(1)))),)
 
 # SOURCE CODE REPOSITORY VERSION
 ifndef REPOSITORY_VER
@@ -410,6 +590,45 @@ ifndef REPOSITORY_VER
       export REPOSITORY_VER := unknown
    endif
 endif
+
+# PREFIXES AND EXTENSIONS
+EC := .ec
+S := .sym
+I := .imp
+B := .bowl
+C := .c
+ifndef O
+O := .o
+endif
+A := .a
+E := $(if $(WINDOWS_TARGET),.exe,)
+SO := $(if $(WINDOWS_TARGET),.dll,$(if $(OSX_TARGET),.dylib,.so))
+LP := $(if $(WINDOWS_TARGET),$(if $(STATIC_LIBRARY_TARGET),lib,),lib)
+HOST_E := $(if $(WINDOWS_HOST),.exe,)
+HOST_SO := $(if $(WINDOWS_HOST),.dll,$(if $(OSX_HOST),.dylib,.so))
+HOST_LP := $(if $(WINDOWS_HOST),$(if $(STATIC_LIBRARY_TARGET),lib,),lib)
+.SUFFIXES: .c .ec .sym .imp .bowl $(O) $(A)
+
+# TARGET VERSION
+VER := $(if $(LINUX_TARGET),$(if $(LINUX_HOST),$(if $(VERSION),.$(VERSION),),),)
+
+# SUPER TOOLS
+ifdef CCACHE
+   CCACHE_COMPILE := ccache$(ch_lit_space)
+ifdef DISTCC
+   DISTCC_COMPILE := distcc$(ch_lit_space)
+endif
+else
+ifdef DISTCC
+   DISTCC_COMPILE := distcc$(ch_lit_space)
+endif
+endif
+
+_CPP = $(if $(findstring $(ch_lit_space),$(CPP)),"$(CPP)",$(CPP))
+
+_SYSROOT = $(if $(SYSROOT),$(ch_lit_space)--sysroot=$(SYSROOT),)
+
+_MAKE = $(call st_quote,$(MAKE))
 
 # COMPILER OPTIONS
 ECSLIBOPT := $(if $(STATIC_LIBRARY_TARGET),-staticlib,$(if $(SHARED_LIBRARY_TARGET),-dynamiclib,))
@@ -440,10 +659,10 @@ endif
 # COMMON LIBRARIES DETECTION
 ifdef WINDOWS_TARGET
  ifdef OPENSSL_CONF
-  _OPENSSL_CONF = $(call hidspace,$(call slash_path,$(OPENSSL_CONF)))
-  OPENSSL_INCLUDE_DIR = $(call shwspace,$(subst /bin/openssl.cfg,/include,$(_OPENSSL_CONF)))
-  OPENSSL_LIB_DIR = $(call shwspace,$(subst /bin/openssl.cfg,/lib,$(_OPENSSL_CONF)))
-  OPENSSL_BIN_DIR = $(call shwspace,$(subst /bin/openssl.cfg,/bin,$(_OPENSSL_CONF)))
+  _OPENSSL_CONF = $(call fp_enc,$(call slash_path,$(OPENSSL_CONF)))
+  OPENSSL_INCLUDE_DIR = $(call fp_dec_esc,$(subst /bin/openssl.cfg,/include,$(_OPENSSL_CONF)))
+  OPENSSL_LIB_DIR = $(call fp_dec_esc,$(subst /bin/openssl.cfg,/lib,$(_OPENSSL_CONF)))
+  OPENSSL_BIN_DIR = $(call fp_dec_esc,$(subst /bin/openssl.cfg,/bin,$(_OPENSSL_CONF)))
  endif
 endif
 
