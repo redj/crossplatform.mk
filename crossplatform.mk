@@ -426,6 +426,27 @@ hidspace = $(subst $(ch_lit_space),$(ch_enc_space),$(subst $(ch_backslash)$(ch_l
 shwspace = $(subst $(ch_enc_space),$(ch_backslash)$(ch_lit_space),$(1))
 
 
+# CHANGES TO OLD TOOLS -- MUST UPDATE THIS COMMIT
+
+# following old hidspace function -- hidspace = $(subst $(space),$(esc),$(subst $(backslash)$(space),$(esc),$(1)))
+hidescspace = $(subst $(backslash)$(space),$(esc),$(1))
+# following old shwspace function -- shwspace = $(subst $(esc),$(backslash)$(space),$(1))
+shwspacequoted = $(subst $(esc),"$(space)",$(subst \$(space),$(esc),$(1)))
+# following old unescp_all function -- unescp_all = $(subst $(esc),$(backslash),$(subst $(backslash),,$(subst $(backslash)$(backslash),$(esc),$(1))))
+for_list = $(call sys_path,$(call unescp_all,$(call shwspacequoted,$(subst $(space),$(comma),$(subst $(space)$(space),$(space),$(call hidescspace,$(1)))))))
+lc = $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,$(subst F,f,$(subst G,g,$(subst H,h,$(subst I,i,$(subst J,j,$(subst K,k,$(subst L,l,$(subst M,m,$(subst N,n,$(subst O,o,$(subst P,p,$(subst Q,q,$(subst R,r,$(subst S,s,$(subst T,t,$(subst U,u,$(subst V,v,$(subst W,w,$(subst X,x,$(subst Y,y,$(subst Z,z,$1))))))))))))))))))))))))))
+ifdef WIN_PS_TOOLS
+# replacing old sys_path function -- sys_path = $(subst $(backslash)$(backslash),$(slash),$(subst $(slash),$(backslash),$(1)))
+   esc_ampersand = $(subst &,^&,$(subst ^&,&,$(1)))
+   sys_path = $(call esc_ampersand,$(subst $(backslash)$(backslash),$(slash),$(subst $(slash),$(backslash),$(1))))
+   each_quote_path = $(call quote_path,$(path))
+endif
+# following old quote_path function -- quote_path = "$(call sys_path,$(call unescp_all,$(1)))"
+#   each_path_quote = $(if $(findstring $(esc),$(path)),"$(call sys_path,$(call unescp_all,$(call shwspace,$(path))))",$(call sys_path,$(call unescp_all,$(path))))
+# following old each_path_quote function -- each_path_quote = $(if $(findstring $(esc),$(path)),"$(call unescp_all,$(call shwspace,$(path)))",$(call unescp_all,$(path)))
+#   sys_path_list
+
+
 st_space_esc_enc = $(subst $(ch_esc_space),$(ch_enc_space),$(1))
 st_space_esc_lit = $(subst $(ch_esc_space),$(ch_lit_space),$(1))
 st_space_lit_enc = $(subst $(ch_lit_space),$(ch_enc_space),$(1))
@@ -515,8 +536,11 @@ addtolistfile = $(if $(1),@$(call echo,$(1)) >> $(2),)
 ifdef WIN_SHELL_COMMANDS
    cd = @cd
    nullerror = 2>NUL
-   echo = $(if $(1),echo $(1))
+   echo = $(if $(1),echo $(1),echo.)
+   cat = $(if $(1),type $(1))
    touch = $(if $(1),@cmd /c "for %%I in ($(call fp_sys,$(1))) do @(cd %%~pI && type nul >> %%~nxI && copy /by %%~nxI+,, > nul 2>&1 && cd %%cd%%)")
+# 996-related would suggest cp and cpr should use for_list instead of sys_path or fp_sys in the list of files / dirs to be copied
+# 996-related would suggest rm and rmr use $(foreach path,$(1),$(each_quote_path)) $(call sys_path,$(1) around the list of files to delete
    cp = $(if $(1),@cmd /c "for %%I in ($(call fp_sys,$(1))) do copy /by %%I $(call fp_dec_sys,$(2))"$(if $(SILENT_IS_ON), > nul,))
    cpr = $(if $(1),xcopy /y /i /e$(if $(SILENT_IS_ON), /q,) $(call fp_sys,$(call pl_sys_quote,$(1))) $(call fp_dec_sys,$(2))$(if $(SILENT_IS_ON), > nul,))
 ifdef _______HEAD
@@ -533,7 +557,8 @@ endif
 else
    cd = cd
    nullerror = 2>/dev/null
-   echo = $(if $(1),echo "$(1)")
+   echo = $(if $(1),echo "$(1)",echo)
+   cat = $(if $(1),cat $(1))
    touch = $(if $(1),touch $(1))
    cp = $(if $(1),cp -P$(if $(SILENT_IS_ON),,v) $(1) $(2))
    cpr = $(if $(1),cp -PR$(if $(SILENT_IS_ON),,v) $(1) $(2))
