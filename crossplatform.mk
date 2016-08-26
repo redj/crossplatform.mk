@@ -186,7 +186,17 @@ hs_process = $(subst $(space),$(hidden_space),$(subst $(backslash)$(space),$(hid
 hs_quote_all = $(foreach item,$(1),"$(call hs_unhide,$(item))")
 hs_quote_each = $(foreach item,$(1),$(if $(findstring $(esc),$(item)),"$(call hs_unhide,$(item))",$(item)))
 
-# FILE PATH FUNCTIONS
+
+
+list_match_dir = $(foreach path,$(2),$(if $(filter-out $(1),$(dir $(path))),,$(path)))
+list_match_sufx_dir = $(foreach path,$(3),$(if $(filter-out $(2),$(dir $(path))),,$(if $(filter-out $(1),$(suffix $(path))),,$(path))))
+list_src_to_obj = $(addprefix $(OBJ),$(patsubst %$(1),%$(2),$(notdir $(3))))
+
+list_match_src_dir_objs = $(patsubst %.c,%$(O),$(foreach path,$(2),$(if $(filter-out $(srcdir)$(1),$(dir $(path))),,$(OBJ)$(notdir $(path)))))
+
+
+
+# FILE PATH TOOLS
 fp_encode = $(call hidspace,$(call fp_unquote,$(1)))
 fp_decode = $(call shwspace,$(1))
 fp_unquote = $(subst $(quote),,$(1))
@@ -430,3 +440,5 @@ ifdef WINDOWS_TARGET
   OPENSSL_BIN_DIR = .
  endif
 endif
+
+cplm-print-%: ; @$(call echo,$* = $($*))
