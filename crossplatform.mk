@@ -290,6 +290,10 @@ _SYSROOT = $(if $(SYSROOT),$(space)--sysroot=$(SYSROOT),)
 
 _MAKE = $(call fp_opt_quotes,$(MAKE))
 
+# cdmake = $(if $(if $(filter-out clean,$(filter-out cleantarget,$(filter-out realclean,$(2)))),$(if $(wildcard $(1)),do,),do),cd $(1) && $(_MAKE)$(if $(srcdir), srcdir=..\$(srcdir)$(1)\ -f ..\$(srcdir)$(1)\Makefile,)$(if $(2), $(2),),)
+cdmake = $(if $(if $(find clean,$(2)),$(if $(wildcard $(1)),do,),do),cd $(1) && $(_MAKE)$(if $(srcdir), srcdir=../$(srcdir)$(1)/ -f ..\\$(srcdir)$(1)\\Makefile,)$(if $(2), $(2),),)
+# cdmake = cd $(1) && $(_MAKE)$(if $(srcdir), srcdir=..\$(srcdir)$(1)\ -f ..\$(srcdir)$(1)\Makefile,)$(if $(2), $(2),)
+
 # SHELL COMMANDS
 ifdef WINDOWS_HOST
    ifneq ($(TERM),cygwin)
