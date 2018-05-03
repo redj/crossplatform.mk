@@ -198,6 +198,7 @@ list_match_src_dir_objs = $(patsubst %.c,%$(O),$(foreach path,$(2),$(if $(filter
 
 # FILE PATH TOOLS
 fp_encode = $(call hidspace,$(call fp_unquote,$(1)))
+#fp_encode = $(subst $(space),$(esc),$(subst $(backslash)$(space),$(esc),$(1))) old encode? same code?
 fp_decode = $(call shwspace,$(1))
 fp_unquote = $(subst $(quote),,$(1))
 fp_opt_quotes = $(if $(findstring $(space),$(1)),"$(1)",$(1))
