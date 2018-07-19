@@ -442,4 +442,235 @@ ifdef WINDOWS_TARGET
  endif
 endif
 
-cplm-print-%: ; @$(call echo,$* = $($*))
+str_issimplever = $(if $(call isanumber,$(firstword $(call spacenumbers,$(subst .,,$(1))))),$(1),)
+str_isversionver = $(if $(call str_issimplever,$(1:v%=%)),$(1),$(if $(call str_issimplever,$(1:ver%=%)),$(1),$(if $(call str_issimplever,$(1:version%=%)),$(1),)))
+str_isreleasever = $(if $(call str_issimplever,$(1:r%=%)),$(1),$(if $(call str_issimplever,$(1:rel%=%)),$(1),$(if $(call str_issimplever,$(1:release%=%)),$(1),)))
+str_isbuildver = $(if $(call str_issimplever,$(1:b%=%)),$(1),$(if $(call str_issimplever,$(1:bld%=%)),$(1),$(if $(call str_issimplever,$(1:build%=%)),$(1),)))
+str_iscomplexver = $(if $(call str_isversionver,$(1)),$(1),$(if $(call str_isreleasever,$(1)),$(1),$(if $(call str_isbuildver,$(1)),$(1),)))
+str_isver = $(if $(call str_issimplever,$(1)),$(1),$(if $(call str_iscomplexver,$(1)),$(1),))
+
+dot := .
+
+digits := 0 1 2 3 4 5 6 7 8 9
+dotits := $(digits) $(dot)
+uppers := A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+lowers := a b c d e f g h i j k l m n o p q r s t u v w x y z
+alphas := $(uppers) $(lowers)
+alnums := $(digits) $(alphas)
+
+true := T
+false := $(empty)
+
+despace = $(subst $(space),$(empty),$(1))
+singlespace = $(subst $(space)$(space),$(space),$(1))
+match = $(if $(and $(2),$(if $(filter-out $(1),$(2)),,$(true))),$(true),)
+setcheck = $(call match,$(1),$(call despace,$(2)))
+eachfind = $(call despace,$(foreach X,$(1),$(findstring $X,$(2))))
+eachsubst = $(eval x__=$(2))$(if $(foreach X,$(1),$(eval x__=$(subst $X,$(space)$X$(space),$(x__)))),$(x__),$(x__))
+eachtest = $(eval each_ret__=$(empty))$(if $(foreach X,$(2),$(info $X --> $(call $(1),$X))$(if $(each_ret__),,$(if $(call $(1),$X),$(eval each_ret__=$X),))),$(each_ret__),$(each_ret__))
+eachtestfmt = $(call eachtest,$(1),$(2))$(if $(3),$(call $(3),$(each_ret__)),$(each_ret__))
+spacedigits = $(strip $(call singlespace,$(call eachsubst,$(digits),$(1))))
+spacedotits = $(strip $(call singlespace,$(call eachsubst,$(dotits),$(1))))
+spaceuppers = $(strip $(call singlespace,$(call eachsubst,$(uppers),$(1))))
+spacelowers = $(strip $(call singlespace,$(call eachsubst,$(lowers),$(1))))
+spacealphas = $(strip $(call singlespace,$(call eachsubst,$(alphas),$(1))))
+spacealnums = $(strip $(call singlespace,$(call eachsubst,$(alnums),$(1))))
+
+#filterdotits = $(filter $(dotits),$(1))
+
+#, spaceuppers, etc: is there a way to use foreach to do recursive substitutions and avoid the spacenumbers mess
+
+#hasnumsanddot = $(if $(or $(or $(or $(or $(findstring 0,$(1)),$(findstring 1,$(1))),$(or $(findstring 2,$(1)),$(findstring 3,$(1)))),$(or $(or $(findstring 4,$(1)),$(findstring 5,$(1))),$(or $(findstring 6,$(1)),$(findstring 7,$(1))))),$(or $(findstring 8,$(1)),$(findstring 9,$(1)))),$(1),)
+hasnumsanddot = $(if $(and $(findstring .,$(1)),$(call hasnumbersnew,$(1))),$(1),)
+hasnumbersnew = $(if $(or $(or $(or $(or $(findstring 0,$(1)),$(findstring 1,$(1))),$(or $(findstring 2,$(1)),$(findstring 3,$(1)))),$(or $(or $(findstring 4,$(1)),$(findstring 5,$(1))),$(or $(findstring 6,$(1)),$(findstring 7,$(1))))),$(or $(findstring 8,$(1)),$(findstring 9,$(1)))),$(1),)
+
+hasnumbersbest = $(if $(foreach X,$(digits),$(findstring $X,$(1))),$(1),)
+#hasdigits = $(if $(foreach X,$(digits),$(findstring $X,$(1))),$(1),)
+
+hasanyofdigits = $(if $(call eachfind,$(digits),$(1)),$(1),)
+hasanyofdotits = $(if $(call eachfind,$(dotits),$(1)),$(1),)
+hasanyofuppers = $(if $(call eachfind,$(uppers),$(1)),$(1),)
+hasanyoflowers = $(if $(call eachfind,$(lowers),$(1)),$(1),)
+hasanyofalphas = $(if $(call eachfind,$(alphas),$(1)),$(1),)
+hasanyofalnums = $(if $(call eachfind,$(alnums),$(1)),$(1),)
+
+hasditanddot = $(if $(and $(findstring $(dot),$(1)),$(call hasanyofdigits,$(1))),$(true),)
+
+setconcat := $(digits) $(dot)
+
+# test suite
+ok = $(space)ok$(space)$(eval ok__=$(ok__)$(space)K)
+fail = $(space)fail$(space)$(eval fail__=$(fail__)$(space)!)
+
+# ts: test something
+ts__ = $(if $(1),$(ok),$(fail))
+ects__ = $(eval SUT_PREREQ_$(1)=$(SUT_PREREQ_$(1))$(space)$(2))$(call echo,   test $(3): $(if $(4),$(ok),$(fail)))
+# te: test empty
+te__ = $(if $(1),$(fail),$(ok))
+
+#suite-all: ;
+#	@$(call echo )$(call test-sets)
+
+# ta: test add
+ta__ = $(eval tests__=$(tests__)$(space)$(1))
+
+sutt-all = $(call tst-sets)$(call suit-spacers)
+
+tst-sets = $(call ta__,test-sets)$(call ts__,$(and $(call setcheck,0123456789,$(digits)),$(and $(call setcheck,0123456789.,$(dotits)),$(and $(call setcheck,ABCDEFGHIJKLMNOPQRSTUVWXYZ,$(uppers)),$(and $(call setcheck,abcdefghijklmnopqrstuvwxyz,$(lowers)),$(and $(call setcheck,ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,$(alphas)),$(call setcheck,0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,$(alnums))))))))
+
+#test-sets: ;
+#tst-debug = $(call setcheck,0123456789,$(digits))
+
+sut-%: $(SUT_PREREQ_%);
+	@$(call echo,SUT_PREREQ_$* = $(SUT_PREREQ_$*))
+	@$(call echo,$*:)
+
+suitesummary = $(info )$(info )$(info $(words $(fail__)) test(s) failed)$(info $(words $(ok__)) test(s) succeeded)$(info )$(info )$(info $(if $(fail__),FAILLURE!,SUCCESS!!))$(info )
+
+info-suit-all: ; $(info )$(info all tests suite:)$(info )
+suit-all: info-suit-all | tests-sets tests-spacers;
+	@$(call suitesummary)
+
+info-suit-sets: ; $(info )$(info sets suite:)$(info )
+tests-sets: info-suit-sets | test-set-digits test-set-dotits test-set-uppers test-set-lowers test-set-alphas test-set-alnums;
+suit-sets: tests-sets;
+	@$(call suitesummary)
+#	@$(call echo,$(if $(fail__),$(words $(fail__)) test(s) failed.,SUCCESS!! no tests failed))
+
+test-set-digits: ; @$(call ects__,sets,test-set-digits,digits set,$(call setcheck,0123456789,$(digits)))
+test-set-dotits: ; @$(call ects__,sets,test-set-dotits,dotits set,$(call setcheck,0123456789.,$(dotits)))
+test-set-uppers: ; @$(call ects__,sets,test-set-uppers,uppers set,$(call setcheck,ABCDEFGHIJKLMNOPQRSTUVWXYZ,$(uppers)))
+test-set-lowers: ; @$(call ects__,sets,test-set-lowers,lowers set,$(call setcheck,abcdefghijklmnopqrstuvwxyz,$(lowers)))
+test-set-alphas: ; @$(call ects__,sets,test-set-alnums,alphas set,$(call setcheck,ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,$(alphas)))
+test-set-alnums: ; @$(call ects__,sets,test-set-alnums,alnums set,$(call setcheck,0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,$(alnums)))
+
+info-suit-spacers: ; $(info )$(info spacers suite:)$(info )
+tests-spacers: info-suit-spacers | test-spacer-digits test-spacer-dotits test-spacer-uppers test-spacer-lowers test-spacer-alphas test-spacer-alnums;
+suit-spacers: tests-spacers;
+	@$(call echo,$(if $(fail__),$(words $(fail__)) test(s) failed.,SUCCESS!! no tests failed))
+
+test-spacer-digits: ; @$(call ects__,sets,test-set-alnums,digits set,$(call spacercheck,$(spacers-tst-r1),$(call spacedigits,$(spacers-tst-val))))
+test-spacer-dotits: ; @$(call ects__,sets,test-set-alnums,dotits set,$(call spacercheck,$(spacers-tst-r2),$(call spacedotits,$(spacers-tst-val))))
+test-spacer-uppers: ; @$(call ects__,sets,test-set-alnums,uppers set,$(call spacercheck,$(spacers-tst-r3),$(call spaceuppers,$(spacers-tst-val))))
+test-spacer-lowers: ; @$(call ects__,sets,test-set-alnums,lowers set,$(call spacercheck,$(spacers-tst-r4),$(call spacelowers,$(spacers-tst-val))))
+test-spacer-alphas: ; @$(call ects__,sets,test-set-alnums,alphas set,$(call spacercheck,$(spacers-tst-r5),$(call spacealphas,$(spacers-tst-val))))
+test-spacer-alnums: ; @$(call ects__,sets,test-set-alnums,alnums set,$(call spacercheck,$(spacers-tst-r6),$(call spacealnums,$(spacers-tst-val))))
+
+
+eachfindx = $(call despace,$(foreach X,$(1),$(findstring $X,$(2))))
+tst-eachfind = $(call eachfindx,$(digits),skd33fd2)
+
+spacers-tst-val := sd..D..31SFks3dfj398sdfSDFI3SD2dFdHdd980jf39.kfSD3FDdfq3.f890ik0jb
+spacers-tst-r1 := sd..D..!3!1!SFks!3!dfj!3!9!8!sdfSDFI!3!SD!2!dFdHdd!9!8!0!jf!3!9!.kfSD!3!FDdfq!3!.f!8!9!0!ik!0!jb
+spacers-tst-r2 := sd!.!.!D!.!.!3!1!SFks!3!dfj!3!9!8!sdfSDFI!3!SD!2!dFdHdd!9!8!0!jf!3!9!.!kfSD!3!FDdfq!3!.!f!8!9!0!ik!0!jb
+spacers-tst-r3 := sd..!D!..31!S!F!ks3dfj398sdf!S!D!F!I!3!S!D!2d!F!d!H!dd980jf39.kf!S!D!3!F!D!dfq3.f890ik0jb
+spacers-tst-r4 := s!d!..D..31SF!k!s!3!d!f!j!398!s!d!f!SDFI3SD2!d!F!d!H!d!d!980!j!f!39.!k!f!SD3FD!d!f!q!3.!f!890!i!k!0!j!b
+spacers-tst-r5 := s!d!..!D!..31!S!F!k!s!3!d!f!j!398!s!d!f!S!D!F!I!3!S!D!2!d!F!d!H!d!d!980!j!f!39.!k!f!S!D!3!F!D!d!f!q!3.!f!890!i!k!0!j!b
+spacers-tst-r6 := s!d!..!D!..!3!1!S!F!k!s!3!d!f!j!3!9!8!s!d!f!S!D!F!I!3!S!D!2!d!F!d!H!d!d!9!8!0!j!f!3!9!.!k!f!S!D!3!F!D!d!f!q!3!.!f!8!9!0!i!k!0!j!b
+#spacercheck = $(call match,$(1),$(subst $(space),!,$(strip $(call singlespace,$(2)))))
+spacercheck = $(call match,$(1),$(subst $(space),!,$(2)))
+
+suit-spacers = $(call tst-spacer1)$(call tst-spacer2)$(call tst-spacer3)$(call tst-spacer4)$(call tst-spacer5)$(call tst-spacer6)
+tst-spacer1 = $(call ts__,$(call spacercheck,$(spacers-tst-r1),$(call spacedigits,$(spacers-tst-val))))
+tst-spacer2 = $(call ts__,$(call spacercheck,$(spacers-tst-r2),$(call spacedotits,$(spacers-tst-val))))
+tst-spacer3 = $(call ts__,$(call spacercheck,$(spacers-tst-r3),$(call spaceuppers,$(spacers-tst-val))))
+tst-spacer4 = $(call ts__,$(call spacercheck,$(spacers-tst-r4),$(call spacelowers,$(spacers-tst-val))))
+tst-spacer5 = $(call ts__,$(call spacercheck,$(spacers-tst-r5),$(call spacealphas,$(spacers-tst-val))))
+tst-spacer6 = $(call ts__,$(call spacercheck,$(spacers-tst-r6),$(call spacealnums,$(spacers-tst-val))))
+
+tst-hasnumbersnewold = $(call te__,$(filter-out 0123456789,$(call hasnumbersnew,0)$(call hasnumbersnew,1)$(call hasnumbersnew,2)$(call hasnumbersnew,3)$(call hasnumbersnew,4)$(call hasnumbersnew,5)$(call hasnumbersnew,6)$(call hasnumbersnew,7)$(call hasnumbersnew,8)$(call hasnumbersnew,9)))
+tst-hasnumsanddotold = $(call ts__,$(filter-out 0.1.2.3.4.5.6.7.8.9.,$(call hasnumsanddot,0.)$(call hasnumsanddot,1.)$(call hasnumsanddot,2.)$(call hasnumsanddot,3.)$(call hasnumsanddot,4.)$(call hasnumsanddot,5.)$(call hasnumsanddot,6.)$(call hasnumsanddot,7.)$(call hasnumsanddot,8.)$(call hasnumsanddot,9.)))
+
+#tst-hasnumbersnew = $(call ts__,$(filter-out 0123456789,$(foreach X,digits,$(call hasnumbersnew,$X))))
+tst-hasnumbersnew = $(foreach X,digits,$(call hasnumbersnew,$X))
+tst-hasnumbersbest = $(call ts__,$(call setcheck,0123456789,$(foreach X,$(digits),$(call hasnumbersbest,$X))))
+tst-hasdigits = $(call ts__,$(call setcheck,0123456789,$(foreach X,$(digits),$(call hasdigits,$X))))
+#tst-hasnumbersbest = $(foreach X,$(digits),$(call hasnumbersbest,$X))
+#tst-hasnumbersbest = $(call match,)
+
+tst-all = $(foreach X,$(tests__),$(call $X))
+
+test-all: $(TARGETS);
+	@$(call echo,tests__ = $(tests__))
+	@$(call echo,all done?)
+
+str_ismajminver = $(if $(and $(call isanumber,$(word 1,$(subst .,$(space),$(1)))),$(call isanumber,$(word 2,$(subst .,$(space),$(1))))))$(1),)
+ismajminver = $(info ismajminver($(1)))$(if $(and $(call isanumber,$(word 1,$(1))),$(and $(call match,$(dot),$(word 2,$(1)))),$(call isanumber,$(word 3,$(1)))),,)
+ismajminverx = $(info ismajminverx($(1)))$(call isanumber,$(word 1,$(1)))
+verparsenew = $(subst $(dot),$(space)$(dot)$(space),$(call despace,$(filter $(dotits),$(call spacedotits,$(1)))))
+comb = $(call ismajminver,$(call verparsenew,$(1)))
+xcomb = $(call ismajminverx,$(call verparsenew,$(1)))
+getver = $(if $(call hasditanddot,$(word 1,$(1))),$(word 1,$(1)),$(wordlist 2,$(words $(1)),$(1)))
+getver0 = $(info 1($(1)) 2($(2)))$(if $(and $(1)$(2),$(call hasditanddot,$(1))),aaa$(1),bbb$(call gitver0,$(word 2,$(2)),$(wordlist 2,$(words $(2)),$(2))))
+gvr = $(eval gvr_r__=)$(if $(foreach X,$(1),$(if $(gvr_r__),,$(if $(call hasditanddot,$X),$(eval gvr_r__=$X),))),$(gvr_r__),$(gvr_r__))
+gvr2 = $(call eachtest,hasditanddot,$(1),hasditanddot)
+gvr3 = $(call eachtest,verparsenew,$(1),verparsenew)
+gvr4 = $(call eachtest,ismajminver,$(1),ismajminver)
+gvr5 = $(call eachtest,comb,$(1),comb)
+getver1 = $(if $(call hasditanddot,$(word 1,$(1))),$(word 1,$(1)),$(call gitver1,$(wordlist 2,$(words $(1)),$(1))))
+wl = start$(wordlist 2,$(words $(1)),$(1))end
+__each = $(call eachfind,$(digits),$(1))
+__hasa = $(call hasanyofdigits,$(1))
+__ditd = $(call hasditanddot,$(1))
+str_getversion = $(if $(1),$(if $(and $(call hasditanddot,$(word 1,$(1))),$(call ismajminver,$(call verparsenew,$(word 1,$(1))))),$(word 1,$(1)),$(call str_getversion,$(wordlist 2,$(words $(1)),$(1)))),)
+
+ifndef OPENSSL_VERSION
+   ifndef OPENSSL
+      OPENSSL := openssl
+   endif
+   ifeq ($(shell $(OPENSSL) version $(nullerror)),)
+      export OPENSSL_NA := $(OPENSSL)NotAvailable
+   else
+		SSL_VER_OUTPUT := $(shell $(OPENSSL) version)
+		SSLw1 = $(word 1,$(SSL_VER_OUTPUT))
+		SSLw2 = $(word 2,$(SSL_VER_OUTPUT))
+		SSLw3 = $(word 3,$(SSL_VER_OUTPUT))
+		SSLe1 = $(call __each,$(SSLw1))
+		SSLe2 = $(call __each,$(SSLw2))
+		SSLe3 = $(call __each,$(SSLw3))
+		SSLh1 = $(call __hasa,$(SSLw1))
+		SSLh2 = $(call __hasa,$(SSLw2))
+		SSLh3 = $(call __hasa,$(SSLw3))
+		SSLd1 = $(call __ditd,$(SSLw1))
+		SSLd2 = $(call __ditd,$(SSLw2))
+		SSLd3 = $(call __ditd,$(SSLw3))
+		SSLv1 = $(call getver,$(SSLw1))
+		SSLv2 = $(call getver,$(SSLw2))
+		SSLv3 = $(call getver,$(SSLw3))
+		SSLa1 = $(call verparsenew,$(SSLw1))
+		SSLa2 = $(call verparsenew,$(SSLw2))
+		SSLa3 = $(call verparsenew,$(SSLw3))
+		SSLb1 = $(call comb,$(SSLw1))
+		SSLb2 = $(call comb,$(SSLw2))
+		SSLb3 = $(call comb,$(SSLw3))
+		#,$(and $(call match,$(dot),$(word 2,$(1)))),$(call isanumber,$(word 3,$(1)))
+		SSLc1 = $(call xcomb,$(SSLw1))
+		SSLc2 = $(call xcomb,$(SSLw2))
+		SSLc3 = $(call xcomb,$(SSLw3))
+#		SSLv2 = $(call verparsenew,$(SSL_VER_OUTPUT))
+		SSLrA = $(call wl,$(SSL_VER_OUTPUT))
+		SSLrB = $(call getver0,,$(SSL_VER_OUTPUT))
+		SSLrC = $(call getver1,$(SSL_VER_OUTPUT))
+		SSLrD = $(call gvr,$(SSL_VER_OUTPUT))
+		SSLrE = $(call gvr2,$(SSL_VER_OUTPUT))
+		SSLrF = $(call gvr3,$(SSL_VER_OUTPUT))
+		SSLrG = $(call gvr4,$(SSL_VER_OUTPUT))
+		SSLrH = $(call gvr5,$(SSL_VER_OUTPUT))
+		SSL_VER = $(call str_getversion,$(SSL_VER_OUTPUT))
+      ifneq ($(SSL_VER),)
+         export OPENSSL_VERSION := $(SSL_VER)
+      endif
+   endif
+endif
+ifndef OPENSSL_VERSION
+   export OPENSSL_VERSION := unknown
+endif
+
+
+cplm-print-%: ; $(info $* = $($*))
+
+cplm-vars-%: ; $(foreach X,$(sort $(.VARIABLES)),$(if $(findstring $*,$X),$(info $X = $($X)),))
+
+all-vars: ; $(foreach X,$(.VARIABLES),$(info $X = $($X)))
+
+all-vars-sort: ; $(foreach X,$(sort $(.VARIABLES)),$(info $X = $($X)))
