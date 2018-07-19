@@ -434,11 +434,6 @@ ifdef WINDOWS_TARGET
   OPENSSL_INCLUDE_DIR = $(call shwspace,$(subst /bin/openssl.cfg,/include,$(_OPENSSL_CONF)))
   OPENSSL_LIB_DIR = $(call shwspace,$(subst /bin/openssl.cfg,/lib,$(_OPENSSL_CONF)))
   OPENSSL_BIN_DIR = $(call shwspace,$(subst /bin/openssl.cfg,/bin,$(_OPENSSL_CONF)))
- else
-# to avoid issues with empty -L/-I
-  OPENSSL_INCLUDE_DIR = .
-  OPENSSL_LIB_DIR = .
-  OPENSSL_BIN_DIR = .
  endif
 endif
 
