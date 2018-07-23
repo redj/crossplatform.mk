@@ -589,7 +589,7 @@ test-all: $(TARGETS);
 	@$(call echo,tests__ = $(tests__))
 	@$(call echo,all done?)
 
-str_ismajminver = $(if $(and $(call isanumber,$(word 1,$(subst .,$(space),$(1)))),$(call isanumber,$(word 2,$(subst .,$(space),$(1))))))$(1),)
+#str_ismajminver = $(if $(and $(call isanumber,$(word 1,$(subst .,$(space),$(1)))),$(call isanumber,$(word 2,$(subst .,$(space),$(1))))))$(1),)
 ismajminver = $(info ismajminver($(1)))$(if $(and $(call isanumber,$(word 1,$(1))),$(and $(call match,$(dot),$(word 2,$(1)))),$(call isanumber,$(word 3,$(1)))),,)
 ismajminverx = $(info ismajminverx($(1)))$(call isanumber,$(word 1,$(1)))
 verparsenew = $(subst $(dot),$(space)$(dot)$(space),$(call despace,$(filter $(dotits),$(call spacedotits,$(1)))))
@@ -661,6 +661,7 @@ ifndef OPENSSL_VERSION
    export OPENSSL_VERSION := unknown
 endif
 
+.DEFAULT_GOAL := all
 
 cplm-print-%: ; $(info $* = $($*))
 
